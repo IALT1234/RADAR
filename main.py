@@ -3,10 +3,13 @@ import pandas as pd
 import plotly.express as px
 import json
 import os
+import requests
+
+
+from functions import load_data, add_key_word_to_category, categorize, save_categories
 
 st.set_page_config(page_title="Data Visualization App", layout="wide")
  
-
 category_file = "categories.json"
 
 
@@ -18,63 +21,27 @@ if "categories" not in st.session_state:
 if os.path.exists(category_file):
     with open(category_file, "r") as f:
         st.session_state.categories = json.load(f)
-
-def save_categories():
-    with open(category_file, "w") as f:
-        json.dump(st.session_state.categories, f)
-
-def categorize(df):
-
-    df["Category"] = "Uncategorized"
-
-    for category, keywords in st.session_state.categories.items(): 
-        if category == "Uncategorized" or not keywords:
-            continue
-
-        lowered_keywords = [keyword.lower().strip() for keyword in keywords]
-
-        for idx, row in df.iterrows():
-            details = row["Details"].lower().strip()
-
-            if details in lowered_keywords:
-                df.at[idx, "Category"] = category
-
-    return df
-
-def add_key_word_to_category(category,keyword):
-    keyword = keyword.strip()
-
-    if keyword and keyword not in st.session_state.categories[category]:
-        st.session_state.categories[category].append(keyword)
-        save_categories()
-        return True
     
-    return False
-
-def load_data(file):
-    try:
-
-        #DATA PROCCESSING
-        df = pd.read_csv(file)
-
-        df.columns = [col.strip() for col in df.columns]
-
-        df["Amount"] = df["Amount"].str.replace(",", "").astype(float)
-        df["Date"] = pd.to_datetime(df["Date"], format="%d %b %Y")
-
-
-
-        return categorize(df)
-    
-
-    except Exception as e:
-        st.error(f"Error loading data: {e}")
-        return None
-
 def main():
+
+    st.title("Streamlit + FastAPI Example")
+
+    if st.button("Call Backend"):
+        response = requests.get("http://127.0.0.1:8000/hello")
+        data = response.json()
+
+        st.write(data["message"])
+
+
+
+
     st.title("Financing Dashboard")
     st.write("This dashboard visualizes financing data from a CSV file.")
     uploaded_file = st.file_uploader("Transactions upload", type=["csv"])
+
+
+
+
 
     if uploaded_file is not None:
         df = load_data(uploaded_file)
@@ -96,7 +63,7 @@ def main():
                 if new_category_button and new_category:
                     if new_category not in st.session_state.categories:
                         st.session_state.categories[new_category] = []
-                        save_categories()
+                        save_categories(category_file)
                         st.rerun()
 
                 st.subheader("Your Expenses")
@@ -114,7 +81,6 @@ def main():
                     hide_index= True,
                     use_container_width=True,
                     key="category_editor"
-
                 )
 
                 save_button = st.button("Apply Changes", type = "primary")
@@ -136,7 +102,6 @@ def main():
                     category_totals,
                     column_config={
                         "Amount": st.column_config.NumberColumn("Amount", format="%.2f AED")
-
                     },
                     use_container_width=True,
                     hide_index=True
@@ -155,7 +120,5 @@ def main():
                 total_payments = credits_df["Amount"].sum()
                 st.metric("Total Payments", f"{total_payments:,.2f}")
                 st.write(credits_df)
-
-
 
 main()
