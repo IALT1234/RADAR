@@ -29,30 +29,6 @@ def categorize(df):
 
 
 
-def categorize(base_fn):
-
-    def enhanced_fn(base_fn):
-
-        
-        df["Category"] = "Uncategorized"
-
-        for category, keywords in st.session_state.categories.items(): 
-            if category == "Uncategorized" or not keywords:
-                continue
-
-            lowered_keywords = [keyword.lower().strip() for keyword in keywords]
-
-            for idx, row in df.iterrows():
-                details = row["Details"].lower().strip()
-
-                if details in lowered_keywords:
-                    df.at[idx, "Category"] = category
-
-        return df
-
-    return df
-
-
 
 def load_data(file):
     try:
